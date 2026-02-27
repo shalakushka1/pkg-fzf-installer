@@ -17,4 +17,4 @@ A minimalist, high-performance package manager interface for Arch Linux using `f
 ## 📦 Installation
 1. Clone the repository:
    ```bash
-   git clone [https://github.com/YOUR_USERNAME/pkg-fzf.git](https://github.com/YOUR_USERNAME/pkg-fzf.git)
+   git clone https://github.com/shalakushka1/pkg-fzf-installer.git
