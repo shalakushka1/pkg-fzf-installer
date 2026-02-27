@@ -1,0 +1,99 @@
+#!/usr/bin/env bash
+
+# Força o shell do fzf a ser o bash para evitar o erro 'invalid argument'
+export SHELL=/usr/bin/bash
+
+set +e
+
+# Função para a mensagem final de conclusão
+wait_message() {
+  echo
+  if command -v gum &>/dev/null; then
+    gum spin --spinner "globe" --title "Pronto! Pressione qualquer tecla para fechar..." -- bash -c 'read -n 1 -s'
+  else
+    echo -e "\nPronto! Pressione qualquer tecla para fechar..."
+    read -n 1 -s
+  fi
+}
+
+# --- MODOS DE OPERAÇÃO ---
+pacman_mode() {
+  pkg_names=$(pacman -Slq | sort -u | fzf \
+    --multi \
+    --prompt="Instalar ❯ " \
+    --preview 'pacman -Si {1}' \
+    --preview-label='[ INFO ]' \
+    --preview-window 'down:65%:wrap' \
+    --bind 'alt-j:preview-down,alt-k:preview-up')
+
+  if [[ -n "$pkg_names" ]]; then
+    echo "$pkg_names" | xargs -r sudo pacman -S
+    wait_message
+  fi
+}
+
+remove_mode() {
+  pkg_names=$(pacman -Qqe | sort | fzf \
+    --multi \
+    --prompt="Remover ❯ " \
+    --preview 'pacman -Qi {1}' \
+    --preview-label='[ INFO ]' \
+    --preview-window 'down:65%:wrap' \
+    --bind 'alt-j:preview-down,alt-k:preview-up')
+
+  if [[ -n "$pkg_names" ]]; then
+    echo "$pkg_names" | xargs -r sudo pacman -Rns
+    wait_message
+  fi
+}
+
+aur_mode() {
+  # SOLUÇÃO PARA O 'BINARY': Não listamos tudo de uma vez.
+  # O fzf começa vazio e o paru pesquisa conforme você digita.
+  pkg_names=$(echo "" | fzf \
+    --multi \
+    --height=100% \
+    --layout=default \
+    --border \
+    --prompt="AUR ❯ " \
+    --header "Digite para pesquisar | TAB: selecionar | ALT-P: Info | ALT-B: PKGBUILD" \
+    --bind "change:reload(paru -Ssq {q} || true)" \
+    --preview '[[ -n {} ]] && paru -Si {1}' \
+    --preview-label='[ INFO ]' \
+    --preview-window 'down:65%:wrap' \
+    --bind 'alt-p:change-preview(paru -Si {1})' \
+    --bind 'alt-b:change-preview(paru -Gp {1})' \
+    --bind 'alt-j:preview-down,alt-k:preview-up')
+
+  if [[ -n "$pkg_names" ]]; then
+    echo -e "\nInstalando do AUR:"
+    echo "$pkg_names" | xargs -r paru -S
+    
+    if command -v updatedb &>/dev/null; then
+      sudo updatedb &
+    fi
+    wait_message
+  fi
+}
+
+main_menu() {
+  while true; do
+  choice=$(printf "Instalar pacotes oficiais\nInstalar pacotes do AUR\nRemover pacotes\nSair" | \
+    fzf \
+    --prompt="Menu ❯ " \
+    --height=100% \
+    --layout=reverse \
+    --border \
+    --cycle)
+
+  case "$choice" in
+    "Instalar pacotes oficiais") pacman_mode ;;
+    "Instalar pacotes do AUR") aur_mode ;;
+    "Remover pacotes") remove_mode ;; 
+    "Sair"|*) clear; exit 0 ;;
+  esac
+done
+}
+
+clear
+main_menu
