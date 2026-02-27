@@ -27,7 +27,7 @@ pacman_mode() {
     --bind 'alt-j:preview-down,alt-k:preview-up')
 
   if [[ -n "$pkg_names" ]]; then
-    echo "$pkg_names" | xargs -r sudo pacman -S
+    echo "$pkg_names" | xargs -r -o sudo pacman -S
     wait_message
   fi
 }
@@ -42,7 +42,7 @@ remove_mode() {
     --bind 'alt-j:preview-down,alt-k:preview-up')
 
   if [[ -n "$pkg_names" ]]; then
-    echo "$pkg_names" | xargs -r sudo pacman -Rns
+    echo "$pkg_names" | xargs -r -o sudo pacman -Rns
     wait_message
   fi
 }
@@ -67,7 +67,7 @@ aur_mode() {
 
   if [[ -n "$pkg_names" ]]; then
     echo -e "\nInstalando do AUR:"
-    echo "$pkg_names" | xargs -r paru -S
+    echo "$pkg_names" | xargs -r -o paru -S
     
     if command -v updatedb &>/dev/null; then
       sudo updatedb &
