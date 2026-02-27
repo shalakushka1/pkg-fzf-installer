@@ -1,11 +1,11 @@
 [Desktop Entry]
 Version=1.0
 Type=Application
-Name=Gerenciador de Pacotes
-Comment=Interface fzf para Pacman e Paru
-# Se o script estiver no seu PATH, apenas 'pkg-fzf' resolve. 
-# Caso contrário, use o caminho completo: /home/seu_usuario/.local/bin/pkg-fzf
-Exec=sh -c "~/.local/bin/pkg-fzf"
+Name=Package Manager
+Comment=Interactive fzf interface for Pacman and Paru
+# If your script is in your PATH, 'pkg-fzf-installer' will work.
+# Otherwise, use the full path: /home/your_user/.local/bin/pkg-fzf-installer
+Exec=sh -c "~/.local/bin/pkg-fzf-installer"
 Icon=system-software-install
 Terminal=true
 Categories=System;
