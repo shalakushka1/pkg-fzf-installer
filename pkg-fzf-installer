@@ -5,22 +5,53 @@ export SHELL=/usr/bin/bash
 
 set +e
 
-# Função para a mensagem final de conclusão
+# Função para a mensagem final de conclusão com as bolinhas do gum
 wait_message() {
   echo
   if command -v gum &>/dev/null; then
-    gum spin --spinner "globe" --title "Pronto! Pressione qualquer tecla para fechar..." -- bash -c 'read -n 1 -s'
+    # Mantive o spinner "points" que são as bolinhas que você gosta
+    gum spin --spinner "points" --title " Pronto! Aperte qualquer tecla para fechar..." -- bash -c 'read -n 1 -s'
   else
-    echo -e "\nPronto! Pressione qualquer tecla para fechar..."
+    echo -e "\n Pronto! Aperte qualquer tecla para fechar..."
     read -n 1 -s
   fi
 }
 
 # --- MODOS DE OPERAÇÃO ---
+
+clean_system() {
+  echo -e "\n--- Limpando o cache do sistema e pacotes órfãos ---"
+  
+  # Remove órfãos de forma interativa (mostra a lista e pergunta)
+  orphans=$(pacman -Qtdq)
+  if [[ -n "$orphans" ]]; then
+    echo -e "\nPacotes órfãos encontrados. Iniciando remoção..."
+    sudo pacman -Rns $orphans
+  else
+    echo "Nenhum pacote órfão para remover."
+  fi
+
+  # Removido o --noconfirm para você poder confirmar [S/n]
+  echo -e "\n--- Limpando cache do Pacman ---"
+  sudo pacman -Sc
+
+  echo -e "\n--- Limpando cache do Paru (AUR) ---"
+  paru -Sc
+  
+  wait_message
+}
+
+update_system() {
+  echo -e "\n--- Iniciando atualização do sistema (Repos + AUR) ---"
+  paru
+  wait_message
+}
+
 pacman_mode() {
   pkg_names=$(pacman -Slq | sort -u | fzf \
     --multi \
     --prompt="Instalar ❯ " \
+    --marker="+" --pointer="❯" \
     --preview 'pacman -Si {1}' \
     --preview-label='[ INFO ]' \
     --preview-window 'down:65%:wrap' \
@@ -36,6 +67,7 @@ remove_mode() {
   pkg_names=$(pacman -Qqe | sort | fzf \
     --multi \
     --prompt="Remover ❯ " \
+    --marker="-" --pointer="❯" \
     --preview 'pacman -Qi {1}' \
     --preview-label='[ INFO ]' \
     --preview-window 'down:65%:wrap' \
@@ -48,16 +80,14 @@ remove_mode() {
 }
 
 aur_mode() {
-  # SOLUÇÃO PARA O 'BINARY': Não listamos tudo de uma vez.
-  # O fzf começa vazio e o paru pesquisa conforme você digita.
   pkg_names=$(echo "" | fzf \
     --multi \
     --height=100% \
     --layout=default \
     --border \
     --prompt="AUR ❯ " \
-    --header "Digite para pesquisar | TAB: selecionar | ALT-P: Info | ALT-B: PKGBUILD" \
-    --bind "change:reload(paru -Ssq {q} || true)" \
+    --header "Digite para pesquisar | TAB: selecionar | ALT-P: Informações | ALT-B: PKGBUILD" \
+    --bind "change:reload(paru -Ssq -a {q} || true)" \
     --preview '[[ -n {} ]] && paru -Si {1}' \
     --preview-label='[ INFO ]' \
     --preview-window 'down:65%:wrap' \
@@ -67,32 +97,49 @@ aur_mode() {
 
   if [[ -n "$pkg_names" ]]; then
     echo -e "\nInstalando do AUR:"
-    echo "$pkg_names" | xargs -r -o paru -S
-    
-    if command -v updatedb &>/dev/null; then
-      sudo updatedb &
-    fi
+    echo "$pkg_names" | xargs -r -o paru -a -S
     wait_message
   fi
 }
 
+# --- MENUS ---
+
+management_menu() {
+  while true; do
+    choice=$(printf "Atualizar sistema\nLimpar cache e órfãos\nRemover pacotes\nVoltar" | \
+      fzf \
+      --prompt="Gerenciamento ❯ " \
+      --height=100% \
+      --layout=reverse \
+      --border \
+      --cycle)
+
+    case "$choice" in
+      "Atualizar sistema") update_system ;;
+      "Limpar cache e órfãos") clean_system ;;
+      "Remover pacotes") remove_mode ;;
+      "Voltar"|*) return ;;
+    esac
+  done
+}
+
 main_menu() {
   while true; do
-  choice=$(printf "Instalar pacotes oficiais\nInstalar pacotes do AUR\nRemover pacotes\nSair" | \
-    fzf \
-    --prompt="Menu ❯ " \
-    --height=100% \
-    --layout=reverse \
-    --border \
-    --cycle)
+    choice=$(printf "Instalar pacotes oficiais\nInstalar pacotes do AUR\nGerenciamento do sistema\nSair" | \
+      fzf \
+      --prompt="Menu Principal ❯ " \
+      --height=100% \
+      --layout=reverse \
+      --border \
+      --cycle)
 
-  case "$choice" in
-    "Instalar pacotes oficiais") pacman_mode ;;
-    "Instalar pacotes do AUR") aur_mode ;;
-    "Remover pacotes") remove_mode ;; 
-    "Sair"|*) clear; exit 0 ;;
-  esac
-done
+    case "$choice" in
+      "Instalar pacotes oficiais") pacman_mode ;;
+      "Instalar pacotes do AUR") aur_mode ;;
+      "Gerenciamento do sistema") management_menu ;;
+      "Sair"|*) clear; exit 0 ;;
+    esac
+  done
 }
 
 clear
