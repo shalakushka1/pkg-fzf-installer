@@ -3,9 +3,7 @@ Version=1.0
 Type=Application
 Name=Package Manager
 Comment=Interactive fzf interface for Pacman and Paru
-# If your script is in your PATH, 'pkg-fzf-installer' will work.
-# Otherwise, use the full path: /home/your_user/.local/bin/pkg-fzf-installer
-Exec=sh -c "~/.local/bin/pkg-fzf-installer"
+Exec=pkg-fzf-installer
 Icon=system-software-install
 Terminal=true
 Categories=System;
