@@ -51,3 +51,11 @@ To install the script globally to `/usr/bin/`, follow these steps:
 * **ALT-P**: Show detailed package information in the preview window.
 * **ALT-B**: Display the PKGBUILD (AUR mode only).
 * **Enter**: Confirm the action.
+
+## 📄 License
+
+This project is licensed under the **GNU General Public License v3.0**.
+
+See the [LICENSE](LICENSE) file for the full text.
+
+---
