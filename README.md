@@ -17,9 +17,7 @@ The following packages are required for the script to function correctly:
 | Package | Role | Installation |
 | :--- | :--- | :--- |
 | **fzf** | Interactive menu and search engine | `sudo pacman -S fzf` |
-| **gum** | Styled spinners and feedback | `sudo pacman -S gum` |
-| **paru** | AUR helper and update manager | `sudo pacman -S paru` |
-| **bash** | Shell interpreter | Pre-installed |
+| **paru** | AUR helper and update manager | See the [installation Guide](https://github.com/Morganamilo/paru?tab=readme-ov-file#installation) |
 
 ## 🛠️ Installation
 
