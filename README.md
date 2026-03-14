@@ -25,11 +25,14 @@ The following packages are required for the script to function correctly:
 
 To install the script globally to `/usr/bin/`, follow these steps:
 
-1.  **Clone or create the script file**:
-    Save your script as `pkg-fzf-installer.sh`.
+1.  **Clone the repository**
+    ```bash
+    git clone https://github.com/shalakushka1/pkg-fzf-installer.git
+    ```
 
 2.  **Make it executable**:
     ```bash
+    cd pkg-fzf-installer
     chmod +x pkg-fzf-installer.sh
     ```
 
@@ -57,5 +60,3 @@ To install the script globally to `/usr/bin/`, follow these steps:
 This project is licensed under the **GNU General Public License v3.0**.
 
 See the [LICENSE](LICENSE) file for the full text.
-
----
