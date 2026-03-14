@@ -1,56 +1,62 @@
 #!/usr/bin/env bash
 
-# Força o shell do fzf a ser o bash para evitar o erro 'invalid argument'
+# Force fzf shell to bash to avoid 'invalid argument' errors
 export SHELL=/usr/bin/bash
 
+# Allow the script to continue even if a command returns a non-zero exit code
 set +e
 
-# Função para a mensagem final de conclusão com as bolinhas do gum
+# Function to show a completion message and wait for user input
 wait_message() {
   echo
   if command -v gum &>/dev/null; then
-    # Mantive o spinner "points" que são as bolinhas que você gosta
-    gum spin --spinner "points" --title " Pronto! Aperte qualquer tecla para fechar..." -- bash -c 'read -n 1 -s'
+    # Using the "points" spinner as requested
+    gum spin --spinner "points" --title " Done! Press any key to close..." -- bash -c 'read -n 1 -s'
   else
-    echo -e "\n Pronto! Aperte qualquer tecla para fechar..."
+    echo -e "\n Done! Press any key to close..."
     read -n 1 -s
   fi
 }
 
-# --- MODOS DE OPERAÇÃO ---
+# --- OPERATION MODES ---
 
+# Interactive system cleanup
 clean_system() {
-  echo -e "\n--- Limpando o cache do sistema e pacotes órfãos ---"
+  echo -e "\n--- Cleaning system cache and orphan packages ---"
   
-  # Remove órfãos de forma interativa (mostra a lista e pergunta)
+  # List and remove orphans if any exist
   orphans=$(pacman -Qtdq)
   if [[ -n "$orphans" ]]; then
-    echo -e "\nPacotes órfãos encontrados. Iniciando remoção..."
+    echo -e "\nOrphan packages found. Starting interactive removal..."
     sudo pacman -Rns $orphans
   else
-    echo "Nenhum pacote órfão para remover."
+    echo "No orphan packages found to remove."
   fi
 
-  # Removido o --noconfirm para você poder confirmar [S/n]
-  echo -e "\n--- Limpando cache do Pacman ---"
+  # Clean pacman cache (Interactive - asks for [Y/n])
+  echo -e "\n--- Cleaning Pacman cache ---"
   sudo pacman -Sc
 
-  echo -e "\n--- Limpando cache do Paru (AUR) ---"
+  # Clean paru/AUR cache (Interactive)
+  echo -e "\n--- Cleaning Paru (AUR) cache ---"
   paru -Sc
   
   wait_message
 }
 
+# Full system update (Repositories + AUR)
 update_system() {
-  echo -e "\n--- Iniciando atualização do sistema (Repos + AUR) ---"
+  echo -e "\n--- Starting Full System Update (Repos + AUR) ---"
+  # Paru automatically handles both official and AUR updates
   paru
   wait_message
 }
 
+# Official repository package installer
 pacman_mode() {
   pkg_names=$(pacman -Slq | sort -u | fzf \
     --multi \
-    --prompt="Instalar ❯ " \
+    --prompt="Install ❯ " \
     --marker="+" --pointer="❯" \
     --preview 'pacman -Si {1}' \
     --preview-label='[ INFO ]' \
@@ -58,15 +64,17 @@ pacman_mode() {
     --bind 'alt-j:preview-down,alt-k:preview-up')
 
   if [[ -n "$pkg_names" ]]; then
+    # Use -o to keep the TTY open for pacman prompts
     echo "$pkg_names" | xargs -r -o sudo pacman -S
     wait_message
   fi
 }
 
+# Package uninstaller
 remove_mode() {
   pkg_names=$(pacman -Qqe | sort | fzf \
     --multi \
-    --prompt="Remover ❯ " \
+    --prompt="Remove ❯ " \
     --marker="-" --pointer="❯" \
     --preview 'pacman -Qi {1}' \
     --preview-label='[ INFO ]' \
@@ -79,14 +87,16 @@ remove_mode() {
   fi
 }
 
+# AUR-exclusive package installer
 aur_mode() {
+  # Exclusive AUR search using the -a flag
   pkg_names=$(echo "" | fzf \
     --multi \
     --height=100% \
     --layout=default \
     --border \
     --prompt="AUR ❯ " \
-    --header "Digite para pesquisar | TAB: selecionar | ALT-P: Informações | ALT-B: PKGBUILD" \
+    --header "Type to search | TAB: select | ALT-P: Info | ALT-B: PKGBUILD" \
     --bind "change:reload(paru -Ssq -a {q} || true)" \
     --preview '[[ -n {} ]] && paru -Si {1}' \
     --preview-label='[ INFO ]' \
@@ -96,7 +106,7 @@ aur_mode() {
     --bind 'alt-j:preview-down,alt-k:preview-up')
 
   if [[ -n "$pkg_names" ]]; then
-    echo -e "\nInstalando do AUR:"
+    echo -e "\nInstalling from AUR:"
     echo "$pkg_names" | xargs -r -o paru -a -S
     wait_message
   fi
@@ -104,43 +114,46 @@ aur_mode() {
 
 # --- MENUS ---
 
+# Secondary menu for system maintenance
 management_menu() {
   while true; do
-    choice=$(printf "Atualizar sistema\nLimpar cache e órfãos\nRemover pacotes\nVoltar" | \
+    choice=$(printf "Update System\nClean Cache and Orphans\nRemove Packages\nBack" | \
       fzf \
-      --prompt="Gerenciamento ❯ " \
+      --prompt="Management ❯ " \
       --height=100% \
       --layout=reverse \
       --border \
       --cycle)
 
     case "$choice" in
-      "Atualizar sistema") update_system ;;
-      "Limpar cache e órfãos") clean_system ;;
-      "Remover pacotes") remove_mode ;;
-      "Voltar"|*) return ;;
+      "Update System") update_system ;;
+      "Clean Cache and Orphans") clean_system ;;
+      "Remove Packages") remove_mode ;;
+      "Back"|*) return ;;
     esac
   done
 }
 
+# Primary entry point
 main_menu() {
   while true; do
-    choice=$(printf "Instalar pacotes oficiais\nInstalar pacotes do AUR\nGerenciamento do sistema\nSair" | \
+    choice=$(printf "Install Official Packages\nInstall AUR Packages\nSystem Management\nExit" | \
       fzf \
-      --prompt="Menu Principal ❯ " \
+      --prompt="Main Menu ❯ " \
       --height=100% \
       --layout=reverse \
       --border \
       --cycle)
 
     case "$choice" in
-      "Instalar pacotes oficiais") pacman_mode ;;
-      "Instalar pacotes do AUR") aur_mode ;;
-      "Gerenciamento do sistema") management_menu ;;
-      "Sair"|*) clear; exit 0 ;;
+      "Install Official Packages") pacman_mode ;;
+      "Install AUR Packages") aur_mode ;;
+      "System Management") management_menu ;;
+      "Exit"|*) clear; exit 0 ;;
     esac
   done
 }
 
+# Entry point
 clear
 main_menu
